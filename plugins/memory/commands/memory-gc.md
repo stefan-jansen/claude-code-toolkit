@@ -2,198 +2,135 @@
 title: memory-gc
 aliases: [/memory-gc]
 description: Garbage collection for stale memory entries - identify and clean up obsolete content
+allowed-tools: [Read, Edit, Bash, Glob, Write]
+argument-hint: "[--auto] [--dry-run]"
 ---
 
 # Memory Garbage Collection
 
 Systematic cleanup of stale, obsolete, or incorrect memory entries.
 
+**Input**: $ARGUMENTS
+
 ## Philosophy: Removal Without Guilt
 
 Memory should reflect CURRENT reality, not history. Remove entries proven wrong, superseded, or obsolete. Archive if historical value exists.
 
-```bash
-#!/bin/bash
+## Modes
 
-# Constants
-MEMORY_DIR=".claude/memory"
-ARCHIVE_DIR=".claude/work/archives/memory"
-CURRENT_DATE=$(date +%Y-%m-%d)
-STALENESS_THRESHOLD=30
+- *(no args)*: Interactive — scan, present findings, ask what to do for each stale file
+- `--auto`: Non-interactive — archive all stale files automatically
+- `--dry-run`: Show what would be cleaned, make no changes
 
-echo "Memory Garbage Collection - $CURRENT_DATE"
-echo ""
+## Constants
 
-# Check if memory directory exists
-if [[ ! -d "$MEMORY_DIR" ]]; then
-    echo "❌ No memory directory found at $MEMORY_DIR"
-    exit 1
-fi
+- **Memory directory**: `.claude/memory/`
+- **Archive directory**: `.claude/work/archives/memory/`
+- **Staleness threshold**: 30 days since last validated/updated timestamp
 
-# Function to calculate days since date
-days_since() {
-    local date_str=$1
-    if [[ -z "$date_str" ]] || [[ "$date_str" == "N/A" ]]; then
-        echo "999"
-        return
-    fi
-    local date_epoch=$(date -d "$date_str" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$date_str" "+%s" 2>/dev/null || echo 0)
-    local current_epoch=$(date +%s)
-    local diff_days=$(( (current_epoch - date_epoch) / 86400 ))
-    echo $diff_days
-}
+## Process
 
-# Step 1: Identify stale files
-echo "📋 Step 1: Identify Stale Files"
-echo "--------------------------------"
-echo ""
+### 1. Check Prerequisites
 
-stale_files=()
+Verify `.claude/memory/` directory exists. If not, tell the user:
+> No memory directory found at `.claude/memory/`. Run `/memory:memory-update` to create initial memory structure.
 
-for file in "$MEMORY_DIR"/*.md; do
-    if [[ ! -f "$file" ]]; then
-        continue
-    fi
+### 2. Scan and Classify
 
-    filename=$(basename "$file")
-    last_validated=$(grep -oE "Last (validated|updated).*[0-9]{4}-[0-9]{2}-[0-9]{2}" "$file" | tail -1 | grep -oE "[0-9]{4}-[0-9]{2}-[0-9]{2}" || echo "")
+For each `.md` file in `.claude/memory/`:
 
-    if [[ -z "$last_validated" ]]; then
-        echo "⚠️  $filename - No timestamp found"
-        stale_files+=("$filename")
-    else
-        days=$(days_since "$last_validated")
-        if [[ $days -gt $STALENESS_THRESHOLD ]]; then
-            echo "🔴 $filename - Stale ($days days since validation)"
-            stale_files+=("$filename")
-        else
-            echo "✅ $filename - Fresh ($days days)"
-        fi
-    fi
-done
+1. Read the file and extract the last validated/updated date using:
+   ```bash
+   grep -oE "Last (validated|updated).*[0-9]{4}-[0-9]{2}-[0-9]{2}" "$FILE" | tail -1 | grep -oE "[0-9]{4}-[0-9]{2}-[0-9]{2}"
+   ```
 
-echo ""
+2. Calculate days since that date (macOS-portable):
+   ```bash
+   date_epoch=$(date -d "$DATE_STR" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$DATE_STR" "+%s" 2>/dev/null || echo 0)
+   current_epoch=$(date +%s)
+   days_since=$(( (current_epoch - date_epoch) / 86400 ))
+   ```
 
-# Step 2: Review stale entries
-if [[ ${#stale_files[@]} -eq 0 ]]; then
-    echo "✅ No stale files found!"
-    echo "   All memory entries are fresh (<$STALENESS_THRESHOLD days)"
-    echo ""
-    exit 0
-fi
+3. Classify:
+   - **Fresh**: timestamp exists and is <30 days old
+   - **Stale**: timestamp exists and is >30 days old
+   - **No timestamp**: treat as stale
 
-echo "📝 Step 2: Review Stale Content"
-echo "--------------------------------"
-echo ""
-echo "Found ${#stale_files[@]} stale file(s) to review"
-echo ""
+### 3. Present Findings
 
-# Interactive review
-for filename in "${stale_files[@]}"; do
-    file="$MEMORY_DIR/$filename"
+Show the user a summary table:
 
-    echo "Reviewing: $filename"
-    echo "---"
-    echo ""
-
-    # Show file summary
-    echo "First 20 lines:"
-    head -20 "$file"
-    echo ""
-    echo "[... file continues ...]"
-    echo ""
-
-    # Ask what to do
-    echo "Actions:"
-    echo "  1) Keep and update timestamp (content still valid)"
-    echo "  2) Archive (historical value but not current)"
-    echo "  3) Delete (incorrect or obsolete)"
-    echo "  4) Skip (review later)"
-    echo ""
-    read -p "Choice [1-4]: " choice
-
-    case $choice in
-        1)
-            # Update timestamp
-            if grep -q "Last validated:" "$file"; then
-                sed -i '' "s/Last validated:.*$/Last validated: $CURRENT_DATE/" "$file"
-            elif grep -q "Last updated:" "$file"; then
-                sed -i '' "s/Last updated:.*$/Last updated: $CURRENT_DATE/" "$file"
-            else
-                sed -i '' "2i\\
-**Last validated**: $CURRENT_DATE\\
-" "$file"
-            fi
-            echo "✅ Timestamp updated"
-            echo ""
-            ;;
-
-        2)
-            # Archive
-            mkdir -p "$ARCHIVE_DIR"
-            archive_name="${filename%.md}_${CURRENT_DATE}.md"
-            mv "$file" "$ARCHIVE_DIR/$archive_name"
-            echo "📦 Archived to $ARCHIVE_DIR/$archive_name"
-            echo ""
-            ;;
-
-        3)
-            # Delete
-            read -p "⚠️  Confirm deletion of $filename [y/N]: " confirm
-            if [[ "$confirm" == "y" ]]; then
-                rm "$file"
-                echo "🗑️  Deleted"
-            else
-                echo "⏭️  Skipped deletion"
-            fi
-            echo ""
-            ;;
-
-        4)
-            echo "⏭️  Skipped"
-            echo ""
-            ;;
-
-        *)
-            echo "❌ Invalid choice, skipping"
-            echo ""
-            ;;
-    esac
-done
-
-# Summary
-echo "📈 Step 3: Garbage Collection Summary"
-echo "--------------------------------------"
-echo ""
-
-remaining_files=$(find "$MEMORY_DIR" -name "*.md" -type f | wc -l)
-total_size=$(du -sh "$MEMORY_DIR" 2>/dev/null | cut -f1)
-
-echo "Memory state after GC:"
-echo "  - Files remaining: $remaining_files"
-echo "  - Total size: $total_size"
-echo ""
-
-if [[ -d "$ARCHIVE_DIR" ]]; then
-    archived_count=$(find "$ARCHIVE_DIR" -name "*.md" -type f 2>/dev/null | wc -l)
-    echo "  - Archived entries: $archived_count"
-    echo ""
-fi
-
-echo "✅ Garbage collection complete"
-echo ""
-echo "💡 Next steps:"
-echo "   - Run /memory-review to verify state"
-echo "   - Run /memory-update to add new learnings"
-echo "   - Schedule next GC in ~30 days"
 ```
+| File | Last Validated | Days | Status |
+|------|---------------|------|--------|
+| project_state.md | 2026-01-15 | 44 | Stale |
+| conventions.md | 2026-02-20 | 8 | Fresh |
+| decisions.md | N/A | - | No timestamp |
+```
+
+If no stale files found, report that all memory is fresh and stop.
+
+### 4. Review Stale Files
+
+**If `--dry-run`**: Stop here. Report what would be cleaned.
+
+**If `--auto`**: Archive all stale files (skip to action execution).
+
+**If interactive (default)**: For each stale file:
+
+1. Read and summarize the file content (first ~20 lines or key sections)
+2. Ask the user which action to take:
+   - **Keep**: Content is still valid — update the timestamp to today
+   - **Archive**: Has historical value but is no longer current — move to archive
+   - **Delete**: Incorrect or obsolete — remove entirely (confirm before deleting)
+   - **Skip**: Review later — leave unchanged
+
+### 5. Execute Actions
+
+For each file based on the chosen action:
+
+**Keep** — Update the timestamp using the Edit tool:
+- If file contains "Last validated:", replace that line with today's date
+- If file contains "Last updated:", replace that line with today's date
+- If neither exists, add `**Last validated**: YYYY-MM-DD` near the top of the file
+
+**Archive** — Move to the archive directory:
+```bash
+mkdir -p .claude/work/archives/memory
+mv ".claude/memory/FILENAME.md" ".claude/work/archives/memory/FILENAME_$(date +%Y-%m-%d).md"
+```
+
+**Delete** — Remove the file (only after explicit user confirmation):
+```bash
+rm ".claude/memory/FILENAME.md"
+```
+
+**Skip** — No action, move to next file.
+
+### 6. Summary
+
+After all actions are complete, report:
+
+```bash
+remaining=$(find .claude/memory -name "*.md" -type f | wc -l | tr -d ' ')
+total_size=$(du -sh .claude/memory 2>/dev/null | cut -f1)
+archived=$(find .claude/work/archives/memory -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+```
+
+Present the results:
+- Files remaining in memory
+- Total memory size
+- Number of archived entries (if any)
+
+Suggest next steps:
+- `/memory:memory-review` to verify state
+- `/memory:memory-update` to add new learnings
 
 ## Integration
 
 **Called by**: `/status` (warn if >30 days), Manual execution
-**Related**: `/memory-review`, `/memory-update`
+**Related**: `/memory:memory-review`, `/memory:memory-update`
 
 ---
 
 **Plugin**: claude-code-memory v1.0.0
-**Status**: ✅ Implemented and tested
