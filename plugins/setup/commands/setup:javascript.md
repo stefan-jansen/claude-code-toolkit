@@ -2,7 +2,6 @@
 allowed-tools: [Read, Write, Bash]
 argument-hint: "[project-name]"
 description: Set up a new JavaScript/Node.js project with modern tooling and Claude framework integration
-skills: [shared-setup-patterns]
 ---
 
 # JavaScript Project Setup
@@ -124,14 +123,11 @@ echo "✅ JavaScript project structure created"
 echo ""
 echo "🔧 Adding Claude Code Framework..."
 
-# Create .claude directory structure (using shared-setup-patterns skill)
+# Create .claude directory structure
 mkdir -p $CLAUDE_DIR/work
 mkdir -p $CLAUDE_DIR/memory
 mkdir -p $CLAUDE_DIR/reference
 mkdir -p $CLAUDE_DIR/hooks
-
-# Generate security hooks from shared skill
-echo "I'll create .claude/settings.json with security hooks from the shared-setup-patterns skill."
 
 # Create project CLAUDE.md
 cat > CLAUDE.md << EOF
@@ -148,9 +144,6 @@ JavaScript/Node.js project with modern tooling.
 ## Current Work
 @.claude/work/README.md
 EOF
-
-# Generate memory files from shared skill templates
-echo "I'll create memory files (.claude/memory/*) using templates from the shared-setup-patterns skill."
 
 # Create work README
 cat > $CLAUDE_DIR/work/README.md << 'EOF'

@@ -2,7 +2,6 @@
 allowed-tools: [Read, Write, Bash]
 argument-hint: ""
 description: Add Claude Code framework to an existing project with auto-detection
-skills: [shared-setup-patterns]
 ---
 
 # Add Claude Framework to Existing Project
@@ -14,14 +13,6 @@ readonly CLAUDE_DIR=".claude"
 
 echo "🔧 Adding Claude Code Framework to existing project..."
 echo ""
-
-# Auto-detect project type using shared-setup-patterns skill
-echo "Detecting project characteristics..."
-
-# Use framework detection patterns from skill to identify:
-# - Language (Python, JavaScript, Go, Rust)
-# - Framework (FastAPI, Django, Next.js, Express, etc.)
-# - Tools (pytest, Jest, etc.)
 
 # Create .claude directory structure
 mkdir -p $CLAUDE_DIR/work

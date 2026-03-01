@@ -95,20 +95,6 @@ Configure Claude Code statusline to show framework context.
 
 ---
 
-## Skills
-
-### shared-setup-patterns
-Common configuration patterns and templates used across all setup commands.
-
-**Provides**:
-- Security hooks (PreToolUse, PostToolUse)
-- Claude framework structure templates
-- Framework detection patterns
-
-**Token Impact**: ~1,700 tokens shared across 5 commands (saves ~3,200 tokens)
-
----
-
 ## Installation
 
 ### Enable in Project
@@ -150,11 +136,10 @@ cd ~/my-project && /setup:existing
 
 ## Token Efficiency
 
-**Design Pattern**: Subcommand pattern with shared skill
+**Design Pattern**: Subcommand pattern
 
 - Each setup mode loads independently (~2,500-4,000 tokens)
-- Shared patterns loaded once via skill (~1,700 tokens)
-- Total savings: ~67-85% vs monolithic setup command
+- Only the requested command is loaded per invocation
 
 **Example**:
 - Old `/setup` (monolithic): 9,700 tokens always loaded

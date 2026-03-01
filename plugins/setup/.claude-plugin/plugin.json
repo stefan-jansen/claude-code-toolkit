@@ -19,7 +19,6 @@
     "./commands/setup:enterprise.md"
   ],
   "skills": [
-    "./skills/shared-setup-patterns",
     "./skills/sandboxing"
   ],
   "license": "MIT"

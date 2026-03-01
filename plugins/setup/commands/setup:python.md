@@ -2,7 +2,6 @@
 allowed-tools: [Read, Write, Bash]
 argument-hint: "[project-name] [--minimal|--standard|--full]"
 description: Set up a new Python project with quality tools and Claude framework integration
-skills: [shared-setup-patterns]
 ---
 
 # Python Project Setup
@@ -404,14 +403,11 @@ EOF
 echo ""
 echo "🔧 Adding Claude Code Framework..."
 
-# Create .claude directory structure (using shared-setup-patterns skill)
+# Create .claude directory structure
 mkdir -p $CLAUDE_DIR/work
 mkdir -p $CLAUDE_DIR/memory
 mkdir -p $CLAUDE_DIR/reference
 mkdir -p $CLAUDE_DIR/hooks
-
-# Generate security hooks from shared skill
-echo "I'll create .claude/settings.json with security hooks from the shared-setup-patterns skill."
 
 # Create project CLAUDE.md
 cat > CLAUDE.md << EOF
@@ -428,9 +424,6 @@ Python project using modern development tools.
 ## Current Work
 @.claude/work/README.md
 EOF
-
-# Generate memory files from shared skill templates
-echo "I'll create memory files (.claude/memory/*) using templates from the shared-setup-patterns skill."
 
 # Create work README
 cat > $CLAUDE_DIR/work/README.md << 'EOF'
