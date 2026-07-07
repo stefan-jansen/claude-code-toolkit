@@ -1,3 +1,22 @@
+> ⚠️ **This repo has been superseded.**
+>
+> The single-agent, Claude-Code-only patterns here have been rewritten as
+> **[coding-agent-toolkit](https://github.com/stefan-jansen/coding-agent-toolkit)** —
+> a cross-agent workflow layer that runs on both **Claude Code** and **OpenAI Codex**,
+> with the same skills accessible as slash commands on either host.
+>
+> The successor covers:
+> - `align → plan → plan-issues → next-issue → ship` — an explicit
+>   spec-first workflow with GitHub milestones + issues as the durable plan trail.
+> - `handoff` / `continue` — cold-startable session transitions written to disk,
+>   so either agent can resume any prior session.
+> - Optional continuous review via [roborev](https://roborev.io).
+>
+> This repo remains available for reference but will not receive further updates.
+> New work should target the successor.
+
+---
+
 # Claude Code Toolkit
 
 **Production-tested commands, skills, and patterns for Claude Code**
